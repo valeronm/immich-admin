@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   enum :status, active: "active", removing: "removing", deleted: "deleted"
 
+  alias_attribute :password_digest, :password
+
+  has_secure_password
+
   has_many :albums, foreign_key: :ownerId
   has_many :assets, foreign_key: :ownerId
   has_many :asset_stacks, foreign_key: :ownerId
@@ -27,6 +31,19 @@ class User < ApplicationRecord
                           join_table: :albums_shared_users_users,
                           foreign_key: :usersId,
                           association_foreign_key: :albumsId
+
+  def self.authenticate_by(email:, password:)
+    if (record = find_by(email:))
+      record if record.authenticate_password(password) && record.admin?
+    else
+      new(password:)
+      nil
+    end
+  end
+
+  def admin?
+    isAdmin?
+  end
 
   UserMetadata::KEYS.each do |key|
     define_method(key) do
