@@ -1,0 +1,5 @@
+<% if link? %>
+  <%= link_to text, href, class: classes %>
+<% else %>
+  <%= button_to text, href, method:, class: classes %>
+<% end %>

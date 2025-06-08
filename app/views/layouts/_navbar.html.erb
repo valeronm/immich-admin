@@ -1,0 +1,30 @@
+<nav class="bg-gray-800" data-controller="mobile-navbar">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between">
+      <div class="flex items-center">
+        <div class="hidden md:block">
+          <div class="flex items-baseline space-x-4">
+            <%= render Navbar::NavigationMenuComponent.new(current_controller: params[:controller]) %>
+          </div>
+        </div>
+      </div>
+      <div class="hidden md:block">
+        <div class="ml-4 flex items-center md:ml-6">
+          <%= render Navbar::NotificationButtonComponent.new %>
+          <%= render Navbar::ProfileMenuComponent.new(image_path: Current.user.profileImagePath) %>
+        </div>
+      </div>
+      <div class="-mr-2 flex md:hidden">
+        <%= render MobileMenuButtonComponent.new %>
+      </div>
+    </div>
+  </div>
+
+  <div class="md:hidden hidden" id="mobile-menu" data-mobile-navbar-target="menu">
+    <%= render MobileMenuComponent.new(
+      image_url: Current.user.profileImagePath,
+      user_name: Current.user.name,
+      user_email: Current.user.email
+    ) %>
+  </div>
+</nav>

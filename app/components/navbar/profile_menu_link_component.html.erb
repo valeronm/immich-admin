@@ -1,0 +1,5 @@
+<% if link? %>
+  <%= link_to text, href, html_attributes %>
+<% else %>
+  <%= button_to text, href, method:, **html_attributes %>
+<% end %>

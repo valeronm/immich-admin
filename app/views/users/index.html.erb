@@ -1,0 +1,32 @@
+<% content_for :title, "Users" %>
+
+<div class="w-full">
+  <% if notice.present? %>
+    <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
+  <% end %>
+
+  <% content_for :header_text, "Users" %>
+
+  <table class="table-auto w-full border-collapse">
+    <thead>
+      <tr>
+        <th class="border-b border-gray-400 p-3 pb-3 pl-6 text-left">Name</th>
+        <th class="border-b border-gray-400 p-3 pb-3 text-left">Email</th>
+        <th class="border-b border-gray-400 p-3 pb-3 text-left">Storage Label</th>
+        <th class="border-b border-gray-400 p-3 pb-3 text-left">Assets</th>
+        <th class="border-b border-gray-400 p-3 pb-3 pr-6 text-left">Used Storage</th>
+      </tr>
+    </thead>
+    <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td class="border-b border-gray-200 p-3 pl-6"><%= user.name %></td>
+        <td class="border-b border-gray-200 p-3"><%= user.email %></td>
+        <td class="border-b border-gray-200 p-3"><%= user.storageLabel %></td>
+        <td class="border-b border-gray-200 p-3"><%= number_with_delimiter user.assets.count %></td>
+        <td class="border-b border-gray-200 p-3 pr-6"><%= number_to_human_size Exif.joins(:asset).merge(user.assets).sum(:fileSizeInByte) %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>

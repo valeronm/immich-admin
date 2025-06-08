@@ -2,7 +2,6 @@ class User < ApplicationRecord
   enum :status, active: "active", removing: "removing", deleted: "deleted"
 
   alias_attribute :password_digest, :password
-
   has_secure_password
 
   has_many :albums, foreign_key: :ownerId
