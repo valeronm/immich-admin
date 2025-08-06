@@ -1,4 +1,6 @@
 class Tag < ApplicationRecord
+  self.table_name = "tag"
+
   belongs_to :user, foreign_key: :userId
   belongs_to :parent, class_name: "Tag", foreign_key: :parentId
 

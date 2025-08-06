@@ -1,13 +1,15 @@
 class Album < ApplicationRecord
+  self.table_name = "album"
+
   belongs_to :owner, class_name: "User", foreign_key: "ownerId"
 
   has_and_belongs_to_many :assets,
-                          join_table: :albums_assets_assets,
+                          join_table: :album_asset,
                           foreign_key: :albumsId,
                           association_foreign_key: :assetsId
   has_and_belongs_to_many :shared_users,
                           class_name: "User",
-                          join_table: :albums_shared_users_users,
+                          join_table: :album_user,
                           foreign_key: :albumsId,
                           association_foreign_key: :usersId
 

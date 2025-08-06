@@ -24,7 +24,7 @@
         <td class="border-b border-gray-200 p-3"><%= user.email %></td>
         <td class="border-b border-gray-200 p-3"><%= user.storageLabel %></td>
         <td class="border-b border-gray-200 p-3"><%= number_with_delimiter user.assets.count %></td>
-        <td class="border-b border-gray-200 p-3 pr-6"><%= number_to_human_size Exif.joins(:asset).merge(user.assets).sum(:fileSizeInByte) %></td>
+        <td class="border-b border-gray-200 p-3 pr-6"><%= number_to_human_size AssetExif.joins(:asset).merge(user.assets).sum(:fileSizeInByte) %></td>
       </tr>
     <% end %>
     </tbody>

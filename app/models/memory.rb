@@ -1,4 +1,5 @@
 class Memory < ApplicationRecord
+  self.table_name = "memory"
   self.inheritance_column = :_type_disabled
 
   enum :type, on_this_day: "on_this_day"
@@ -6,7 +7,7 @@ class Memory < ApplicationRecord
   belongs_to :owner, class_name: "User", foreign_key: :ownerId
 
   has_and_belongs_to_many :assets,
-                          join_table: :memories_assets_assets,
+                          join_table: :memory_asset,
                           foreign_key: :memoriesId,
                           association_foreign_key: :assetsId
 

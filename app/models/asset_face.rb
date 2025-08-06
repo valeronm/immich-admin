@@ -1,4 +1,6 @@
 class AssetFace < ApplicationRecord
+  self.table_name = "asset_face"
+
   enum :sourceType, machine_learning: "machine-learning", exif: "exif", manual: "manual"
 
   belongs_to :asset, foreign_key: :assetId

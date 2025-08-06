@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  self.table_name = "user"
+
   enum :status, active: "active", removing: "removing", deleted: "deleted"
 
   alias_attribute :password_digest, :password
@@ -27,7 +29,7 @@ class User < ApplicationRecord
 
   has_and_belongs_to_many :shared_albums,
                           class_name: "Album",
-                          join_table: :albums_shared_users_users,
+                          join_table: :album_user,
                           foreign_key: :usersId,
                           association_foreign_key: :albumsId
 

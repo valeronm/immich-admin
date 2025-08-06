@@ -38,24 +38,16 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.text "comment"
     t.boolean "isLiked", default: false, null: false
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["albumId"], name: "IDX_1af8519996fbfb3684b58df280"
-    t.index ["assetId", "userId", "albumId"], name: "IDX_activity_like", unique: true, where: "(\"isLiked\" = true)"
-    t.index ["assetId"], name: "IDX_8091ea76b12338cb4428d33d78"
-    t.index ["updateId"], name: "IDX_activity_update_id"
-    t.index ["userId"], name: "IDX_3571467bcbe021f66e2bdce96e"
-    t.check_constraint "comment IS NULL AND \"isLiked\" = true OR comment IS NOT NULL AND \"isLiked\" = false", name: "CHK_2ab1e70f113f450eb40c1e3ec8"
+    t.index ["albumId", "assetId"], name: "activity_albumId_assetId_idx"
+    t.index ["albumId"], name: "activity_albumId_idx"
+    t.index ["assetId", "userId", "albumId"], name: "activity_like_idx", unique: true, where: "(\"isLiked\" = true)"
+    t.index ["assetId"], name: "activity_assetId_idx"
+    t.index ["updateId"], name: "activity_updateId_idx"
+    t.index ["userId"], name: "activity_userId_idx"
+    t.check_constraint "comment IS NULL AND \"isLiked\" = true OR comment IS NOT NULL AND \"isLiked\" = false", name: "activity_like_check"
   end
 
-  create_table "album_users_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
-    t.uuid "albumId", null: false
-    t.uuid "userId", null: false
-    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
-    t.index ["albumId"], name: "IDX_album_users_audit_album_id"
-    t.index ["deletedAt"], name: "IDX_album_users_audit_deleted_at"
-    t.index ["userId"], name: "IDX_album_users_audit_user_id"
-  end
-
-  create_table "albums", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "album", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.uuid "ownerId", null: false
     t.string "albumName", default: "Untitled Album", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
@@ -66,40 +58,64 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.boolean "isActivityEnabled", default: true, null: false
     t.string "order", default: "desc", null: false
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["albumThumbnailAssetId"], name: "IDX_05895aa505a670300d4816debc"
-    t.index ["ownerId"], name: "IDX_b22c53f35ef20c28c21637c85f"
-    t.index ["updateId"], name: "IDX_albums_update_id"
+    t.index ["albumThumbnailAssetId"], name: "album_albumThumbnailAssetId_idx"
+    t.index ["ownerId"], name: "album_ownerId_idx"
+    t.index ["updateId"], name: "album_updateId_idx"
   end
 
-  create_table "albums_assets_assets", primary_key: ["albumsId", "assetsId"], force: :cascade do |t|
+  create_table "album_asset", primary_key: ["albumsId", "assetsId"], force: :cascade do |t|
     t.uuid "albumsId", null: false
     t.uuid "assetsId", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
-    t.index ["albumsId"], name: "IDX_e590fa396c6898fcd4a50e4092"
-    t.index ["assetsId"], name: "IDX_4bd1303d199f4e72ccdf998c62"
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["albumsId"], name: "album_asset_albumsId_idx"
+    t.index ["assetsId"], name: "album_asset_assetsId_idx"
+    t.index ["updateId"], name: "album_asset_updateId_idx"
   end
 
-  create_table "albums_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+  create_table "album_asset_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "albumId", null: false
+    t.uuid "assetId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["albumId"], name: "album_asset_audit_albumId_idx"
+    t.index ["assetId"], name: "album_asset_audit_assetId_idx"
+    t.index ["deletedAt"], name: "album_asset_audit_deletedAt_idx"
+  end
+
+  create_table "album_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
     t.uuid "albumId", null: false
     t.uuid "userId", null: false
     t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
-    t.index ["albumId"], name: "IDX_albums_audit_album_id"
-    t.index ["deletedAt"], name: "IDX_albums_audit_deleted_at"
-    t.index ["userId"], name: "IDX_albums_audit_user_id"
+    t.index ["albumId"], name: "album_audit_albumId_idx"
+    t.index ["deletedAt"], name: "album_audit_deletedAt_idx"
+    t.index ["userId"], name: "album_audit_userId_idx"
   end
 
-  create_table "albums_shared_users_users", primary_key: ["albumsId", "usersId"], force: :cascade do |t|
+  create_table "album_user", primary_key: ["albumsId", "usersId"], force: :cascade do |t|
     t.uuid "albumsId", null: false
     t.uuid "usersId", null: false
     t.string "role", default: "editor", null: false
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
-    t.index ["albumsId"], name: "IDX_427c350ad49bd3935a50baab73"
-    t.index ["updateId"], name: "IDX_album_users_update_id"
-    t.index ["usersId"], name: "IDX_f48513bf9bccefd6ff3ad30bd0"
+    t.uuid "createId", default: -> { "immich_uuid_v7()" }, null: false
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.index ["albumsId"], name: "album_user_albumsId_idx"
+    t.index ["createId"], name: "album_user_createId_idx"
+    t.index ["updateId"], name: "album_user_updateId_idx"
+    t.index ["usersId"], name: "album_user_usersId_idx"
   end
 
-  create_table "api_keys", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "album_user_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "albumId", null: false
+    t.uuid "userId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["albumId"], name: "album_user_audit_albumId_idx"
+    t.index ["deletedAt"], name: "album_user_audit_deletedAt_idx"
+    t.index ["userId"], name: "album_user_audit_userId_idx"
+  end
+
+  create_table "api_key", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "name", null: false
     t.string "key", null: false
     t.uuid "userId", null: false
@@ -107,54 +123,11 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
     t.string "permissions", null: false, array: true
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["updateId"], name: "IDX_api_keys_update_id"
-    t.index ["userId"], name: "IDX_6c2e267ae764a9413b863a2934"
+    t.index ["updateId"], name: "api_key_updateId_idx"
+    t.index ["userId"], name: "api_key_userId_idx"
   end
 
-  create_table "asset_faces", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
-    t.uuid "assetId", null: false
-    t.uuid "personId"
-    t.integer "imageWidth", default: 0, null: false
-    t.integer "imageHeight", default: 0, null: false
-    t.integer "boundingBoxX1", default: 0, null: false
-    t.integer "boundingBoxY1", default: 0, null: false
-    t.integer "boundingBoxX2", default: 0, null: false
-    t.integer "boundingBoxY2", default: 0, null: false
-    t.enum "sourceType", default: "machine-learning", null: false, enum_type: "sourcetype"
-    t.timestamptz "deletedAt"
-    t.index ["assetId", "personId"], name: "IDX_asset_faces_assetId_personId"
-    t.index ["personId", "assetId"], name: "IDX_bf339a24070dac7e71304ec530"
-  end
-
-  create_table "asset_files", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
-    t.uuid "assetId", null: false
-    t.timestamptz "createdAt", default: -> { "now()" }, null: false
-    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
-    t.string "type", null: false
-    t.string "path", null: false
-    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["assetId"], name: "IDX_asset_files_assetId"
-    t.index ["updateId"], name: "IDX_asset_files_update_id"
-    t.unique_constraint ["assetId", "type"], name: "UQ_assetId_type"
-  end
-
-  create_table "asset_job_status", primary_key: "assetId", id: :uuid, default: nil, force: :cascade do |t|
-    t.timestamptz "facesRecognizedAt"
-    t.timestamptz "metadataExtractedAt"
-    t.timestamptz "duplicatesDetectedAt"
-    t.timestamptz "previewAt"
-    t.timestamptz "thumbnailAt"
-  end
-
-  create_table "asset_stack", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
-    t.uuid "primaryAssetId", null: false
-    t.uuid "ownerId", null: false
-    t.index ["ownerId"], name: "IDX_c05079e542fd74de3b5ecb5c1c"
-    t.index ["primaryAssetId"], name: "IDX_91704e101438fd0653f582426d"
-    t.unique_constraint ["primaryAssetId"], name: "REL_91704e101438fd0653f582426d"
-  end
-
-  create_table "assets", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "asset", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "deviceAssetId", null: false
     t.uuid "ownerId", null: false
     t.string "deviceId", null: false
@@ -182,43 +155,34 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.enum "status", default: "active", null: false, enum_type: "assets_status_enum"
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
     t.enum "visibility", default: "timeline", null: false, enum_type: "asset_visibility_enum"
-    t.index "(((\"localDateTime\" AT TIME ZONE 'UTC'::text))::date)", name: "idx_local_date_time"
-    t.index "(date_trunc('MONTH'::text, (\"localDateTime\" AT TIME ZONE 'UTC'::text)) AT TIME ZONE 'UTC'::text)", name: "idx_local_date_time_month"
-    t.index "f_unaccent((\"originalFileName\")::text) gin_trgm_ops", name: "idx_originalfilename_trigram", using: :gin
-    t.index ["checksum"], name: "IDX_8d3efe36c0755849395e6ea866"
-    t.index ["duplicateId"], name: "IDX_assets_duplicateId"
-    t.index ["fileCreatedAt"], name: "idx_asset_file_created_at"
-    t.index ["id", "stackId"], name: "IDX_asset_id_stackId"
-    t.index ["libraryId"], name: "IDX_9977c3c1de01c3d848039a6b90"
-    t.index ["livePhotoVideoId"], name: "IDX_16294b83fa8c0149719a1f631e"
-    t.index ["originalFileName"], name: "IDX_4d66e76dada1ca180f67a205dc"
-    t.index ["originalPath", "libraryId"], name: "IDX_originalPath_libraryId"
+    t.index "(((\"localDateTime\" AT TIME ZONE 'UTC'::text))::date)", name: "asset_localDateTime_idx"
+    t.index "(date_trunc('MONTH'::text, (\"localDateTime\" AT TIME ZONE 'UTC'::text)) AT TIME ZONE 'UTC'::text)", name: "asset_localDateTime_month_idx"
+    t.index "f_unaccent((\"originalFileName\")::text) gin_trgm_ops", name: "asset_originalFilename_trigram_idx", using: :gin
+    t.index ["checksum"], name: "asset_checksum_idx"
+    t.index ["duplicateId"], name: "asset_duplicateId_idx"
+    t.index ["fileCreatedAt"], name: "asset_fileCreatedAt_idx"
+    t.index ["id", "stackId"], name: "asset_id_stackId_idx"
+    t.index ["libraryId"], name: "asset_libraryId_idx"
+    t.index ["livePhotoVideoId"], name: "asset_livePhotoVideoId_idx"
+    t.index ["originalFileName"], name: "asset_originalFileName_idx"
+    t.index ["originalPath", "libraryId"], name: "asset_originalPath_libraryId_idx"
     t.index ["ownerId", "checksum"], name: "UQ_assets_owner_checksum", unique: true, where: "(\"libraryId\" IS NULL)"
-    t.index ["ownerId", "libraryId", "checksum"], name: "UQ_assets_owner_library_checksum", unique: true, where: "(\"libraryId\" IS NOT NULL)"
-    t.index ["ownerId"], name: "IDX_2c5ac0d6fb58b238fd2068de67"
-    t.index ["stackId"], name: "IDX_f15d48fa3ea5e4bda05ca8ab20"
-    t.index ["updateId"], name: "IDX_assets_update_id"
+    t.index ["ownerId", "libraryId", "checksum"], name: "asset_ownerId_libraryId_checksum_idx", unique: true, where: "(\"libraryId\" IS NOT NULL)"
+    t.index ["ownerId"], name: "asset_ownerId_idx"
+    t.index ["stackId"], name: "asset_stackId_idx"
+    t.index ["updateId"], name: "asset_updateId_idx"
   end
 
-  create_table "assets_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+  create_table "asset_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
     t.uuid "assetId", null: false
     t.uuid "ownerId", null: false
     t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
-    t.index ["assetId"], name: "IDX_assets_audit_asset_id"
-    t.index ["deletedAt"], name: "IDX_assets_audit_deleted_at"
-    t.index ["ownerId"], name: "IDX_assets_audit_owner_id"
+    t.index ["assetId"], name: "asset_audit_assetId_idx"
+    t.index ["deletedAt"], name: "asset_audit_deletedAt_idx"
+    t.index ["ownerId"], name: "asset_audit_ownerId_idx"
   end
 
-  create_table "audit", id: :serial, force: :cascade do |t|
-    t.string "entityType", null: false
-    t.uuid "entityId", null: false
-    t.string "action", null: false
-    t.uuid "ownerId", null: false
-    t.timestamptz "createdAt", default: -> { "now()" }, null: false
-    t.index ["ownerId", "createdAt"], name: "IDX_ownerId_createdAt"
-  end
-
-  create_table "exif", primary_key: "assetId", id: :uuid, default: nil, force: :cascade do |t|
+  create_table "asset_exif", primary_key: "assetId", id: :uuid, default: nil, force: :cascade do |t|
     t.string "make"
     t.string "model"
     t.integer "exifImageWidth"
@@ -249,10 +213,65 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.integer "rating"
     t.timestamptz "updatedAt", default: -> { "clock_timestamp()" }, null: false
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["autoStackId"], name: "IDX_auto_stack_id"
-    t.index ["city"], name: "exif_city"
-    t.index ["livePhotoCID"], name: "IDX_live_photo_cid"
-    t.index ["updateId"], name: "IDX_asset_exif_update_id"
+    t.index ["autoStackId"], name: "asset_exif_autoStackId_idx"
+    t.index ["city"], name: "asset_exif_city_idx"
+    t.index ["livePhotoCID"], name: "asset_exif_livePhotoCID_idx"
+    t.index ["updateId"], name: "asset_exif_updateId_idx"
+  end
+
+  create_table "asset_face", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+    t.uuid "assetId", null: false
+    t.uuid "personId"
+    t.integer "imageWidth", default: 0, null: false
+    t.integer "imageHeight", default: 0, null: false
+    t.integer "boundingBoxX1", default: 0, null: false
+    t.integer "boundingBoxY1", default: 0, null: false
+    t.integer "boundingBoxX2", default: 0, null: false
+    t.integer "boundingBoxY2", default: 0, null: false
+    t.enum "sourceType", default: "machine-learning", null: false, enum_type: "sourcetype"
+    t.timestamptz "deletedAt"
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["assetId", "personId"], name: "asset_face_assetId_personId_idx"
+    t.index ["personId", "assetId"], name: "asset_face_personId_assetId_idx"
+  end
+
+  create_table "asset_face_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "assetFaceId", null: false
+    t.uuid "assetId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["assetFaceId"], name: "asset_face_audit_assetFaceId_idx"
+    t.index ["assetId"], name: "asset_face_audit_assetId_idx"
+    t.index ["deletedAt"], name: "asset_face_audit_deletedAt_idx"
+  end
+
+  create_table "asset_file", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+    t.uuid "assetId", null: false
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.string "type", null: false
+    t.string "path", null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["assetId"], name: "asset_file_assetId_idx"
+    t.index ["updateId"], name: "asset_file_updateId_idx"
+    t.unique_constraint ["assetId", "type"], name: "asset_file_assetId_type_uq"
+  end
+
+  create_table "asset_job_status", primary_key: "assetId", id: :uuid, default: nil, force: :cascade do |t|
+    t.timestamptz "facesRecognizedAt"
+    t.timestamptz "metadataExtractedAt"
+    t.timestamptz "duplicatesDetectedAt"
+    t.timestamptz "previewAt"
+    t.timestamptz "thumbnailAt"
+  end
+
+  create_table "audit", id: :serial, force: :cascade do |t|
+    t.string "entityType", null: false
+    t.uuid "entityId", null: false
+    t.string "action", null: false
+    t.uuid "ownerId", null: false
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.index ["ownerId", "createdAt"], name: "audit_ownerId_createdAt_idx"
   end
 
   create_table "face_search", primary_key: "faceId", id: :uuid, default: nil, force: :cascade do |t|
@@ -275,7 +294,7 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.index "f_unaccent((\"admin2Name\")::text) gin_trgm_ops", name: "idx_geodata_places_admin2_name", using: :gin
     t.index "f_unaccent((\"alternateNames\")::text) gin_trgm_ops", name: "idx_geodata_places_alternate_names", using: :gin
     t.index "f_unaccent((name)::text) gin_trgm_ops", name: "idx_geodata_places_name", using: :gin
-    t.index "ll_to_earth_public(latitude, longitude)) WITH (fillfactor='100'", name: "idx_geodata_gist_earthcoord", using: :gist
+    t.index "ll_to_earth_public(latitude, longitude)", name: "IDX_geodata_gist_earthcoord", using: :gist
   end
 
   create_table "kysely_migrations", primary_key: "name", id: { type: :string, limit: 255 }, force: :cascade do |t|
@@ -286,7 +305,7 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.integer "is_locked", default: 0, null: false
   end
 
-  create_table "libraries", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "library", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "name", null: false
     t.uuid "ownerId", null: false
     t.text "importPaths", null: false, array: true
@@ -296,11 +315,11 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.timestamptz "deletedAt"
     t.timestamptz "refreshedAt"
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["ownerId"], name: "IDX_0f6fc2fb195f24d19b0fb0d57c"
-    t.index ["updateId"], name: "IDX_libraries_update_id"
+    t.index ["ownerId"], name: "library_ownerId_idx"
+    t.index ["updateId"], name: "library_updateId_idx"
   end
 
-  create_table "memories", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "memory", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
     t.timestamptz "deletedAt"
@@ -313,15 +332,41 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.timestamptz "showAt"
     t.timestamptz "hideAt"
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["ownerId"], name: "IDX_575842846f0c28fa5da46c99b1"
-    t.index ["updateId"], name: "IDX_memories_update_id"
+    t.index ["ownerId"], name: "memory_ownerId_idx"
+    t.index ["updateId"], name: "memory_updateId_idx"
   end
 
-  create_table "memories_assets_assets", primary_key: ["memoriesId", "assetsId"], force: :cascade do |t|
+  create_table "memory_asset", primary_key: ["memoriesId", "assetsId"], force: :cascade do |t|
     t.uuid "memoriesId", null: false
     t.uuid "assetsId", null: false
-    t.index ["assetsId"], name: "IDX_6942ecf52d75d4273de19d2c16"
-    t.index ["memoriesId"], name: "IDX_984e5c9ab1f04d34538cd32334"
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["assetsId"], name: "memory_asset_assetsId_idx"
+    t.index ["memoriesId"], name: "memory_asset_memoriesId_idx"
+    t.index ["updateId"], name: "memory_asset_updateId_idx"
+  end
+
+  create_table "memory_asset_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "memoryId", null: false
+    t.uuid "assetId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["assetId"], name: "memory_asset_audit_assetId_idx"
+    t.index ["deletedAt"], name: "memory_asset_audit_deletedAt_idx"
+    t.index ["memoryId"], name: "memory_asset_audit_memoryId_idx"
+  end
+
+  create_table "memory_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "memoryId", null: false
+    t.uuid "userId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["deletedAt"], name: "memory_audit_deletedAt_idx"
+    t.index ["memoryId"], name: "memory_audit_memoryId_idx"
+    t.index ["userId"], name: "memory_audit_userId_idx"
+  end
+
+  create_table "migration_overrides", primary_key: "name", id: :string, force: :cascade do |t|
+    t.jsonb "value", null: false
   end
 
   create_table "move_history", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
@@ -341,7 +386,7 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.polygon "coordinates", null: false
   end
 
-  create_table "notifications", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "notification", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
     t.timestamptz "deletedAt"
@@ -353,28 +398,30 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.string "title", null: false
     t.text "description"
     t.timestamptz "readAt"
-    t.index ["updateId"], name: "IDX_notifications_update_id"
-    t.index ["userId"], name: "IDX_692a909ee0fa9383e7859f9b40"
+    t.index ["updateId"], name: "notification_updateId_idx"
+    t.index ["userId"], name: "notification_userId_idx"
   end
 
-  create_table "partners", primary_key: ["sharedById", "sharedWithId"], force: :cascade do |t|
+  create_table "partner", primary_key: ["sharedById", "sharedWithId"], force: :cascade do |t|
     t.uuid "sharedById", null: false
     t.uuid "sharedWithId", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
     t.boolean "inTimeline", default: false, null: false
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["sharedWithId"], name: "IDX_d7e875c6c60e661723dbf372fd"
-    t.index ["updateId"], name: "IDX_partners_update_id"
+    t.uuid "createId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["createId"], name: "partner_createId_idx"
+    t.index ["sharedWithId"], name: "partner_sharedWithId_idx"
+    t.index ["updateId"], name: "partner_updateId_idx"
   end
 
-  create_table "partners_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+  create_table "partner_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
     t.uuid "sharedById", null: false
     t.uuid "sharedWithId", null: false
     t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
-    t.index ["deletedAt"], name: "IDX_partners_audit_deleted_at"
-    t.index ["sharedById"], name: "IDX_partners_audit_shared_by_id"
-    t.index ["sharedWithId"], name: "IDX_partners_audit_shared_with_id"
+    t.index ["deletedAt"], name: "partner_audit_deletedAt_idx"
+    t.index ["sharedById"], name: "partner_audit_sharedById_idx"
+    t.index ["sharedWithId"], name: "partner_audit_sharedWithId_idx"
   end
 
   create_table "person", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
@@ -389,24 +436,22 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.boolean "isFavorite", default: false, null: false
     t.string "color"
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["faceAssetId"], name: "IDX_2bbabe31656b6778c6b87b6102"
-    t.index ["ownerId"], name: "IDX_5527cc99f530a547093f9e577b"
-    t.index ["updateId"], name: "IDX_person_update_id"
-    t.check_constraint "\"birthDate\" <= CURRENT_DATE", name: "CHK_b0f82b0ed662bfc24fbb58bb45"
+    t.index ["faceAssetId"], name: "person_faceAssetId_idx"
+    t.index ["ownerId"], name: "person_ownerId_idx"
+    t.index ["updateId"], name: "person_updateId_idx"
+    t.check_constraint "\"birthDate\" <= CURRENT_DATE", name: "person_birthDate_chk"
   end
 
-  create_table "session_sync_checkpoints", primary_key: ["sessionId", "type"], force: :cascade do |t|
-    t.uuid "sessionId", null: false
-    t.string "type", null: false
-    t.timestamptz "createdAt", default: -> { "now()" }, null: false
-    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
-    t.string "ack", null: false
-    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["sessionId"], name: "IDX_d8ddd9d687816cc490432b3d4b"
-    t.index ["updateId"], name: "IDX_session_sync_checkpoints_update_id"
+  create_table "person_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "personId", null: false
+    t.uuid "ownerId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["deletedAt"], name: "person_audit_deletedAt_idx"
+    t.index ["ownerId"], name: "person_audit_ownerId_idx"
+    t.index ["personId"], name: "person_audit_personId_idx"
   end
 
-  create_table "sessions", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "session", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "token", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
     t.timestamptz "updatedAt", default: -> { "now()" }, null: false
@@ -417,19 +462,24 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.timestamptz "pinExpiresAt"
     t.timestamptz "expiresAt"
     t.uuid "parentId"
-    t.index ["parentId"], name: "IDX_afbbabbd7daf5b91de4dca84de"
-    t.index ["updateId"], name: "IDX_sessions_update_id"
-    t.index ["userId"], name: "IDX_57de40bc620f456c7311aa3a1e"
+    t.boolean "isPendingSyncReset", default: false, null: false
+    t.index ["parentId"], name: "session_parentId_idx"
+    t.index ["updateId"], name: "session_updateId_idx"
+    t.index ["userId"], name: "session_userId_idx"
   end
 
-  create_table "shared_link__asset", primary_key: ["assetsId", "sharedLinksId"], force: :cascade do |t|
-    t.uuid "assetsId", null: false
-    t.uuid "sharedLinksId", null: false
-    t.index ["assetsId"], name: "IDX_5b7decce6c8d3db9593d6111a6"
-    t.index ["sharedLinksId"], name: "IDX_c9fab4aa97ffd1b034f3d6581a"
+  create_table "session_sync_checkpoint", primary_key: ["sessionId", "type"], force: :cascade do |t|
+    t.uuid "sessionId", null: false
+    t.string "type", null: false
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.string "ack", null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["sessionId"], name: "session_sync_checkpoint_sessionId_idx"
+    t.index ["updateId"], name: "session_sync_checkpoint_updateId_idx"
   end
 
-  create_table "shared_links", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "shared_link", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "description"
     t.uuid "userId", null: false
     t.binary "key", null: false
@@ -441,10 +491,19 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.boolean "allowDownload", default: true, null: false
     t.boolean "showExif", default: true, null: false
     t.string "password"
-    t.index ["albumId"], name: "IDX_sharedlink_albumId"
-    t.index ["key"], name: "IDX_sharedlink_key"
-    t.index ["userId"], name: "IDX_66fe3837414c5a9f1c33ca4934"
-    t.unique_constraint ["key"], name: "UQ_sharedlink_key"
+    t.string "slug"
+    t.index ["albumId"], name: "shared_link_albumId_idx"
+    t.index ["key"], name: "shared_link_key_idx"
+    t.index ["userId"], name: "shared_link_userId_idx"
+    t.unique_constraint ["key"], name: "shared_link_key_uq"
+    t.unique_constraint ["slug"], name: "shared_link_slug_uq"
+  end
+
+  create_table "shared_link_asset", primary_key: ["assetsId", "sharedLinksId"], force: :cascade do |t|
+    t.uuid "assetsId", null: false
+    t.uuid "sharedLinksId", null: false
+    t.index ["assetsId"], name: "shared_link_asset_assetsId_idx"
+    t.index ["sharedLinksId"], name: "shared_link_asset_sharedLinksId_idx"
   end
 
   create_table "smart_search", primary_key: "assetId", id: :uuid, default: nil, force: :cascade do |t|
@@ -452,19 +511,29 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.index ["embedding"], name: "clip_index", opclass: :vector_cosine_ops, using: :vchordrq
   end
 
+  create_table "stack", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+    t.uuid "primaryAssetId", null: false
+    t.uuid "ownerId", null: false
+    t.timestamptz "createdAt", default: -> { "now()" }, null: false
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.index ["ownerId"], name: "stack_ownerId_idx"
+    t.index ["primaryAssetId"], name: "stack_primaryAssetId_idx"
+    t.unique_constraint ["primaryAssetId"], name: "stack_primaryAssetId_uq"
+  end
+
+  create_table "stack_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "stackId", null: false
+    t.uuid "userId", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["deletedAt"], name: "stack_audit_deletedAt_idx"
+  end
+
   create_table "system_metadata", primary_key: "key", id: :string, force: :cascade do |t|
     t.jsonb "value", null: false
   end
 
-  create_table "tag_asset", primary_key: ["assetsId", "tagsId"], force: :cascade do |t|
-    t.uuid "assetsId", null: false
-    t.uuid "tagsId", null: false
-    t.index ["assetsId", "tagsId"], name: "IDX_tag_asset_assetsId_tagsId"
-    t.index ["assetsId"], name: "IDX_f8e8a9e893cb5c54907f1b798e"
-    t.index ["tagsId"], name: "IDX_e99f31ea4cdf3a2c35c7287eb4"
-  end
-
-  create_table "tags", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "tag", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.uuid "userId", null: false
     t.string "value", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
@@ -472,25 +541,27 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.string "color"
     t.uuid "parentId"
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
-    t.index ["parentId"], name: "IDX_9f9590cc11561f1f48ff034ef9"
-    t.index ["updateId"], name: "IDX_tags_update_id"
-    t.unique_constraint ["userId", "value"], name: "UQ_79d6f16e52bb2c7130375246793"
+    t.index ["parentId"], name: "tag_parentId_idx"
+    t.index ["updateId"], name: "tag_updateId_idx"
+    t.unique_constraint ["userId", "value"], name: "tag_userId_value_uq"
   end
 
-  create_table "tags_closure", primary_key: ["id_ancestor", "id_descendant"], force: :cascade do |t|
+  create_table "tag_asset", primary_key: ["assetsId", "tagsId"], force: :cascade do |t|
+    t.uuid "assetsId", null: false
+    t.uuid "tagsId", null: false
+    t.index ["assetsId", "tagsId"], name: "tag_asset_assetsId_tagsId_idx"
+    t.index ["assetsId"], name: "tag_asset_assetsId_idx"
+    t.index ["tagsId"], name: "tag_asset_tagsId_idx"
+  end
+
+  create_table "tag_closure", primary_key: ["id_ancestor", "id_descendant"], force: :cascade do |t|
     t.uuid "id_ancestor", null: false
     t.uuid "id_descendant", null: false
-    t.index ["id_ancestor"], name: "IDX_15fbcbc67663c6bfc07b354c22"
-    t.index ["id_descendant"], name: "IDX_b1a2a7ed45c29179b5ad51548a"
+    t.index ["id_ancestor"], name: "tag_closure_id_ancestor_idx"
+    t.index ["id_descendant"], name: "tag_closure_id_descendant_idx"
   end
 
-  create_table "user_metadata", primary_key: ["userId", "key"], force: :cascade do |t|
-    t.uuid "userId", null: false
-    t.string "key", null: false
-    t.jsonb "value", null: false
-  end
-
-  create_table "users", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
+  create_table "user", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
     t.string "email", null: false
     t.string "password", default: "", null: false
     t.timestamptz "createdAt", default: -> { "now()" }, null: false
@@ -509,16 +580,35 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
     t.string "avatarColor"
     t.string "pinCode"
-    t.index ["updateId"], name: "IDX_users_update_id"
-    t.index ["updatedAt", "id"], name: "IDX_users_updated_at_asc_id_asc"
-    t.unique_constraint ["email"], name: "UQ_97672ac88f789774dd47f7c8be3"
-    t.unique_constraint ["storageLabel"], name: "UQ_b309cf34fa58137c416b32cea3a"
+    t.index ["updateId"], name: "user_updateId_idx"
+    t.index ["updatedAt", "id"], name: "user_updatedAt_id_idx"
+    t.unique_constraint ["email"], name: "user_email_uq"
+    t.unique_constraint ["storageLabel"], name: "user_storageLabel_uq"
   end
 
-  create_table "users_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+  create_table "user_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
     t.uuid "userId", null: false
     t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
-    t.index ["deletedAt"], name: "IDX_users_audit_deleted_at"
+    t.index ["deletedAt"], name: "user_audit_deletedAt_idx"
+  end
+
+  create_table "user_metadata", primary_key: ["userId", "key"], force: :cascade do |t|
+    t.uuid "userId", null: false
+    t.string "key", null: false
+    t.jsonb "value", null: false
+    t.uuid "updateId", default: -> { "immich_uuid_v7()" }, null: false
+    t.timestamptz "updatedAt", default: -> { "now()" }, null: false
+    t.index ["updateId"], name: "IDX_user_metadata_update_id"
+    t.index ["updatedAt"], name: "IDX_user_metadata_updated_at"
+  end
+
+  create_table "user_metadata_audit", id: :uuid, default: -> { "immich_uuid_v7()" }, force: :cascade do |t|
+    t.uuid "userId", null: false
+    t.string "key", null: false
+    t.timestamptz "deletedAt", default: -> { "clock_timestamp()" }, null: false
+    t.index ["deletedAt"], name: "IDX_user_metadata_audit_deleted_at"
+    t.index ["key"], name: "IDX_user_metadata_audit_key"
+    t.index ["userId"], name: "IDX_user_metadata_audit_user_id"
   end
 
   create_table "version_history", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
@@ -526,50 +616,53 @@ ActiveRecord::Schema[8.0].define(version: 0) do
     t.string "version", null: false
   end
 
-  add_foreign_key "activity", "albums", column: "albumId", name: "FK_1af8519996fbfb3684b58df280b", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "activity", "assets", column: "assetId", name: "FK_8091ea76b12338cb4428d33d782", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "activity", "users", column: "userId", name: "FK_3571467bcbe021f66e2bdce96ea", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "albums", "assets", column: "albumThumbnailAssetId", name: "FK_05895aa505a670300d4816debce", on_update: :cascade, on_delete: :nullify
-  add_foreign_key "albums", "users", column: "ownerId", name: "FK_b22c53f35ef20c28c21637c85f4", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "albums_assets_assets", "albums", column: "albumsId", name: "FK_e590fa396c6898fcd4a50e40927", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "albums_assets_assets", "assets", column: "assetsId", name: "FK_4bd1303d199f4e72ccdf998c621", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "albums_shared_users_users", "albums", column: "albumsId", name: "FK_427c350ad49bd3935a50baab737", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "albums_shared_users_users", "users", column: "usersId", name: "FK_f48513bf9bccefd6ff3ad30bd06", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "api_keys", "users", column: "userId", name: "FK_6c2e267ae764a9413b863a29342", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "asset_faces", "assets", column: "assetId", name: "FK_02a43fd0b3c50fb6d7f0cb7282c", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "asset_faces", "person", column: "personId", name: "FK_95ad7106dd7b484275443f580f9", on_update: :cascade, on_delete: :nullify
-  add_foreign_key "asset_files", "assets", column: "assetId", name: "FK_e3e103a5f1d8bc8402999286040", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "asset_job_status", "assets", column: "assetId", name: "FK_420bec36fc02813bddf5c8b73d4", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "asset_stack", "assets", column: "primaryAssetId", name: "FK_91704e101438fd0653f582426dc"
-  add_foreign_key "asset_stack", "users", column: "ownerId", name: "FK_c05079e542fd74de3b5ecb5c1c8", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "assets", "asset_stack", column: "stackId", name: "FK_f15d48fa3ea5e4bda05ca8ab207", on_update: :cascade, on_delete: :nullify
-  add_foreign_key "assets", "assets", column: "livePhotoVideoId", name: "FK_16294b83fa8c0149719a1f631ef", on_update: :cascade, on_delete: :nullify
-  add_foreign_key "assets", "libraries", column: "libraryId", name: "FK_9977c3c1de01c3d848039a6b90c", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "assets", "users", column: "ownerId", name: "FK_2c5ac0d6fb58b238fd2068de67d", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "exif", "assets", column: "assetId", name: "FK_c0117fdbc50b917ef9067740c44", on_delete: :cascade
-  add_foreign_key "face_search", "asset_faces", column: "faceId", name: "face_search_faceId_fkey", on_delete: :cascade
-  add_foreign_key "libraries", "users", column: "ownerId", name: "FK_0f6fc2fb195f24d19b0fb0d57c1", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "memories", "users", column: "ownerId", name: "FK_575842846f0c28fa5da46c99b19", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "memories_assets_assets", "assets", column: "assetsId", name: "FK_6942ecf52d75d4273de19d2c16f", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "memories_assets_assets", "memories", column: "memoriesId", name: "FK_984e5c9ab1f04d34538cd32334e", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "notifications", "users", column: "userId", name: "FK_692a909ee0fa9383e7859f9b406", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "partners", "users", column: "sharedById", name: "FK_7e077a8b70b3530138610ff5e04", on_delete: :cascade
-  add_foreign_key "partners", "users", column: "sharedWithId", name: "FK_d7e875c6c60e661723dbf372fd3", on_delete: :cascade
-  add_foreign_key "person", "asset_faces", column: "faceAssetId", name: "FK_2bbabe31656b6778c6b87b61023", on_delete: :nullify
-  add_foreign_key "person", "users", column: "ownerId", name: "FK_5527cc99f530a547093f9e577b6", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "session_sync_checkpoints", "sessions", column: "sessionId", name: "FK_d8ddd9d687816cc490432b3d4bc", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "sessions", "sessions", column: "parentId", name: "FK_afbbabbd7daf5b91de4dca84de8", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "sessions", "users", column: "userId", name: "FK_57de40bc620f456c7311aa3a1e6", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "shared_link__asset", "assets", column: "assetsId", name: "FK_5b7decce6c8d3db9593d6111a66", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "shared_link__asset", "shared_links", column: "sharedLinksId", name: "FK_c9fab4aa97ffd1b034f3d6581ab", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "shared_links", "albums", column: "albumId", name: "FK_0c6ce9058c29f07cdf7014eac66", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "shared_links", "users", column: "userId", name: "FK_66fe3837414c5a9f1c33ca49340", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "smart_search", "assets", column: "assetId", name: "smart_search_assetId_fkey", on_delete: :cascade
-  add_foreign_key "tag_asset", "assets", column: "assetsId", name: "FK_f8e8a9e893cb5c54907f1b798e9", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "tag_asset", "tags", column: "tagsId", name: "FK_e99f31ea4cdf3a2c35c7287eb42", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "tags", "tags", column: "parentId", name: "FK_9f9590cc11561f1f48ff034ef99", on_delete: :cascade
-  add_foreign_key "tags", "users", column: "userId", name: "FK_92e67dc508c705dd66c94615576", on_update: :cascade, on_delete: :cascade
-  add_foreign_key "tags_closure", "tags", column: "id_ancestor", name: "FK_15fbcbc67663c6bfc07b354c22c", on_delete: :cascade
-  add_foreign_key "tags_closure", "tags", column: "id_descendant", name: "FK_b1a2a7ed45c29179b5ad51548a1", on_delete: :cascade
-  add_foreign_key "user_metadata", "users", column: "userId", name: "FK_6afb43681a21cf7815932bc38ac", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "activity", "album", column: "albumId", name: "activity_albumId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "activity", "album_asset", column: ["albumId", "assetId"], primary_key: ["albumsId", "assetsId"], name: "activity_albumId_assetId_fkey", on_delete: :cascade
+  add_foreign_key "activity", "asset", column: "assetId", name: "activity_assetId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "activity", "user", column: "userId", name: "activity_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album", "asset", column: "albumThumbnailAssetId", name: "album_albumThumbnailAssetId_fkey", on_update: :cascade, on_delete: :nullify
+  add_foreign_key "album", "user", column: "ownerId", name: "album_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album_asset", "album", column: "albumsId", name: "album_asset_albumsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album_asset", "asset", column: "assetsId", name: "album_asset_assetsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album_asset_audit", "album", column: "albumId", name: "album_asset_audit_albumId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album_user", "album", column: "albumsId", name: "album_user_albumsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "album_user", "user", column: "usersId", name: "album_user_usersId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "api_key", "user", column: "userId", name: "api_key_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "asset", "asset", column: "livePhotoVideoId", name: "asset_livePhotoVideoId_fkey", on_update: :cascade, on_delete: :nullify
+  add_foreign_key "asset", "library", column: "libraryId", name: "asset_libraryId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "asset", "stack", column: "stackId", name: "asset_stackId_fkey", on_update: :cascade, on_delete: :nullify
+  add_foreign_key "asset", "user", column: "ownerId", name: "asset_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "asset_exif", "asset", column: "assetId", name: "asset_exif_assetId_fkey", on_delete: :cascade
+  add_foreign_key "asset_face", "asset", column: "assetId", name: "asset_face_assetId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "asset_face", "person", column: "personId", name: "asset_face_personId_fkey", on_update: :cascade, on_delete: :nullify
+  add_foreign_key "asset_file", "asset", column: "assetId", name: "asset_file_assetId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "asset_job_status", "asset", column: "assetId", name: "asset_job_status_assetId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "face_search", "asset_face", column: "faceId", name: "face_search_faceId_fkey", on_delete: :cascade
+  add_foreign_key "library", "user", column: "ownerId", name: "library_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "memory", "user", column: "ownerId", name: "memory_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "memory_asset", "asset", column: "assetsId", name: "memory_asset_assetsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "memory_asset", "memory", column: "memoriesId", name: "memory_asset_memoriesId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "memory_asset_audit", "memory", column: "memoryId", name: "memory_asset_audit_memoryId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "notification", "user", column: "userId", name: "notification_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "partner", "user", column: "sharedById", name: "partner_sharedById_fkey", on_delete: :cascade
+  add_foreign_key "partner", "user", column: "sharedWithId", name: "partner_sharedWithId_fkey", on_delete: :cascade
+  add_foreign_key "person", "asset_face", column: "faceAssetId", name: "person_faceAssetId_fkey", on_delete: :nullify
+  add_foreign_key "person", "user", column: "ownerId", name: "person_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "session", "session", column: "parentId", name: "session_parentId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "session", "user", column: "userId", name: "session_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "session_sync_checkpoint", "session", column: "sessionId", name: "session_sync_checkpoint_sessionId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "shared_link", "album", column: "albumId", name: "shared_link_albumId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "shared_link", "user", column: "userId", name: "shared_link_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "shared_link_asset", "asset", column: "assetsId", name: "shared_link_asset_assetsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "shared_link_asset", "shared_link", column: "sharedLinksId", name: "shared_link_asset_sharedLinksId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "smart_search", "asset", column: "assetId", name: "smart_search_assetId_fkey", on_delete: :cascade
+  add_foreign_key "stack", "asset", column: "primaryAssetId", name: "stack_primaryAssetId_fkey"
+  add_foreign_key "stack", "user", column: "ownerId", name: "stack_ownerId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "tag", "tag", column: "parentId", name: "tag_parentId_fkey", on_delete: :cascade
+  add_foreign_key "tag", "user", column: "userId", name: "tag_userId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "tag_asset", "asset", column: "assetsId", name: "tag_asset_assetsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "tag_asset", "tag", column: "tagsId", name: "tag_asset_tagsId_fkey", on_update: :cascade, on_delete: :cascade
+  add_foreign_key "tag_closure", "tag", column: "id_ancestor", name: "tag_closure_id_ancestor_fkey", on_delete: :cascade
+  add_foreign_key "tag_closure", "tag", column: "id_descendant", name: "tag_closure_id_descendant_fkey", on_delete: :cascade
+  add_foreign_key "user_metadata", "user", column: "userId", name: "user_metadata_userId_fkey", on_update: :cascade, on_delete: :cascade
 end

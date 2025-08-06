@@ -1,4 +1,5 @@
 class SharedLink < ApplicationRecord
+  self.table_name = "shared_link"
   self.inheritance_column = :_type_disabled
 
   enum :type, album: "ALBUM", individual: "INDIVIDUAL"
@@ -7,7 +8,7 @@ class SharedLink < ApplicationRecord
   belongs_to :album, foreign_key: :albumId, optional: true
 
   has_and_belongs_to_many :assets,
-                          join_table: :shared_link__asset,
+                          join_table: :shared_link_asset,
                           foreign_key: :sharedLinksId,
                           association_foreign_key: :assetsId
 end

@@ -1,4 +1,5 @@
 class Asset < ApplicationRecord
+  self.table_name = "asset"
   self.inheritance_column = :_type_disabled
 
   enum :type, image: "IMAGE", video: "VIDEO", audio: "AUDIO", other: "OTHER"
@@ -10,11 +11,11 @@ class Asset < ApplicationRecord
 
   has_many :files, foreign_key: :assetId, class_name: "AssetFile"
   has_many :faces, foreign_key: :assetId, class_name: "AssetFace"
-  has_one :exif, foreign_key: :assetId
+  has_one :exif, foreign_key: :assetId, class_name: "AssetExif"
   has_one :asset_job_status, foreign_key: :assetId
 
   has_and_belongs_to_many :albums,
-                          join_table: :albums_assets_assets,
+                          join_table: :album_asset,
                           foreign_key: :assetsId,
                           association_foreign_key: :albumsId
   has_and_belongs_to_many :tags,
