@@ -155,8 +155,8 @@ GEM
     mini_mime (1.1.5)
     minitest (5.25.5)
     msgpack (1.8.0)
-    neighbor (0.5.2)
-      activerecord (>= 7)
+    neighbor (0.6.0)
+      activerecord (>= 7.1)
     net-imap (0.5.8)
       date
       net-protocol
